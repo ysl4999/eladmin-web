@@ -15,3 +15,11 @@ export function download(url, params) {
     responseType: 'blob'
   })
 }
+
+export function upload(data) {
+  return request({
+    url: '/app/file/upload',
+    method: 'post',
+    data
+  })
+}
