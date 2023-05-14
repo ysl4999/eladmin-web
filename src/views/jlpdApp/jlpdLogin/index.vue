@@ -1,72 +1,95 @@
 <template>
-  <div class="app-container">
-    <!--工具栏-->
-    <div class="head-container">
-      <!--如果想在工具栏加入更多按钮，可以使用插槽方式， slot = 'left' or 'right'-->
-      <crudOperation :permission="permission" />
-      <!--表单组件-->
-      <el-dialog :close-on-click-modal="false" :before-close="crud.cancelCU" :visible.sync="crud.status.cu > 0" :title="crud.status.title" width="500px">
-        <el-form ref="form" :model="form" :rules="rules" size="small" label-width="80px">
+  <div v-loading="loading" class="app-container">
+    <div class="config-container">
+      <span class="config-item">
+        <h4>登录配置</h4>
+        <el-form :model="userLogin">
+          <el-form-item label="手机号 + 密码验证">
+            <el-switch v-model="userLogin.MOBILE_PASSWORD" @change="updateLoginConf" />
+          </el-form-item>
+          <el-form-item label="用户名 + 密码验证">
+            <el-switch v-model="userLogin.USERNAME_PASSWORD" @change="updateLoginConf" />
+          </el-form-item>
+          <el-form-item label="邮箱号 + 密码验证">
+            <el-switch v-model="userLogin.EMAIL_PASSWORD" @change="updateLoginConf" />
+          </el-form-item>
+          <el-form-item label="手机 + 验证码">
+            <el-switch v-model="userLogin.MOBILE_CODE" @change="updateLoginConf" />
+          </el-form-item>
+          <el-form-item label="邮箱 + 验证码">
+            <el-switch v-model="userLogin.EMAIL_CODE" @change="updateLoginConf" />
+          </el-form-item>
         </el-form>
-        <div slot="footer" class="dialog-footer">
-          <el-button type="text" @click="crud.cancelCU">取消</el-button>
-          <el-button :loading="crud.status.cu === 2" type="primary" @click="crud.submitCU">确认</el-button>
-        </div>
-      </el-dialog>
-      <!--表格渲染-->
-      <el-table ref="table" v-loading="crud.loading" :data="crud.data" size="small" style="width: 100%;" @selection-change="crud.selectionChangeHandler">
-        <el-table-column type="selection" width="55" />
-        <el-table-column prop="status" label="状态（0正常 1删除 2停用）" />
-        <el-table-column v-if="checkPer(['admin','testData:edit','testData:del'])" label="操作" width="150px" align="center">
-          <template slot-scope="scope">
-            <udOperation
-              :data="scope.row"
-              :permission="permission"
-            />
-          </template>
-        </el-table-column>
-      </el-table>
-      <!--分页组件-->
-      <pagination />
+      </span>
+      <span class="config-item">
+        <h4>注册配置</h4>
+        <el-form :model="userRegister">
+          <el-form-item label="手机号 + 密码注册">
+            <el-switch v-model="userRegister.MOBILE_PASSWORD" @change="updateRegConf" />
+          </el-form-item>
+          <el-form-item label="用户名 + 密码注册">
+            <el-switch v-model="userRegister.USERNAME_PASSWORD" @change="updateRegConf" />
+          </el-form-item>
+          <el-form-item label="邮箱 + 密码注册">
+            <el-switch v-model="userRegister.EMAIL_PASSWORD" @change="updateRegConf" />
+          </el-form-item>
+        </el-form>
+      </span>
     </div>
   </div>
 </template>
 
 <script>
-import crudTestData from '@/api/jlpdApp/jlpdLogin'
-import CRUD, { presenter, header, form, crud } from '@crud/crud'
-import rrOperation from '@crud/RR.operation'
-import crudOperation from '@crud/CRUD.operation'
-import udOperation from '@crud/UD.operation'
-import pagination from '@crud/Pagination'
+import { getLoginConfig, getRegisterConfig, updateLoginConfig, updateRegisterConfig } from '@/api/jlpdApp/jipdConfig'
 
-const defaultForm = { id: null, testUserCode: null, testOfficeCode: null, testAreaCode: null, testAreaName: null, status: null, createBy: null, createDate: null, updateBy: null, updateDate: null, remarks: null }
 export default {
-  name: 'TestData',
-  components: { pagination, crudOperation, rrOperation, udOperation },
-  mixins: [presenter(), header(), form(defaultForm), crud()],
-  cruds() {
-    return CRUD({ title: '极乐派对登录', url: 'api/testData', idField: 'id', sort: 'id,desc', crudMethod: { ...crudTestData }})
-  },
   data() {
     return {
-      permission: {
-        add: ['admin', 'testData:add'],
-        edit: ['admin', 'testData:edit'],
-        del: ['admin', 'testData:del']
+      loading: false,
+      userLogin: {
+        MOBILE_PASSWORD: true,
+        USERNAME_PASSWORD: true,
+        EMAIL_PASSWORD: false,
+        MOBILE_CODE: false,
+        EMAIL_CODE: false
       },
-      rules: {
-      }    }
+      userRegister: {
+        MOBILE_PASSWORD: false,
+        USERNAME_PASSWORD: true,
+        EMAIL_PASSWORD: false
+      }
+    }
+  },
+  created() {
+    this.getConfig()
   },
   methods: {
-    // 钩子：在获取表格数据之前执行，false 则代表不获取数据
-    [CRUD.HOOK.beforeRefresh]() {
-      return true
+    async updateLoginConf() {
+      await updateLoginConfig(this.userLogin)
+      this.getConfig()
+      this.$message.success('修改成功！')
+    },
+    async updateRegConf() {
+      await updateRegisterConfig(this.userRegister)
+      this.getConfig()
+      this.$message.success('修改成功！')
+    },
+    async getConfig() {
+      this.loading = true
+      this.userLogin = await getLoginConfig()
+      this.userRegister = await getRegisterConfig()
+      this.loading = false
     }
   }
 }
 </script>
 
 <style scoped>
-
+.config-container{
+  display: flex;
+}
+.config-item{
+  width: 20%;
+  display: inline-block;
+}
 </style>
